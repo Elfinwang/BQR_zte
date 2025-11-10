@@ -1,0 +1,46 @@
+SELECT 
+    collecttime - INTERVAL '60 MINUTE' AS begintime, 
+    collecttime AS endtime, 
+    dstsaving
+FROM (
+    SELECT 
+        collecttime,
+        dstsaving,
+        COUNT(*) AS ITBBU_NRPhysicalCellDU_NO
+    FROM (
+        SELECT 
+            collecttime, 
+            dstsaving, 
+            pm_table.NRRadioInfrastructure, 
+            pm_table.NRPhysicalCellDU
+        FROM (
+            SELECT 
+                pm_table.collecttime AS collecttime, 
+                pm_table.dstsaving AS dstsaving, 
+                pm_table.me AS pmdume, 
+                pm_table.NRRadioInfrastructure, 
+                pm_table.NRPhysicalCellDU
+            FROM A_N_PHYCELLDU_MERGE_h pm_table
+            INNER JOIN NRPHYSICELLATT
+                ON pm_table.collecttime = NRPHYSICELLATT.collecttime
+                AND pm_table.me = NRPHYSICELLATT.dume
+                AND pm_table.NRRadioInfrastructure = NRPHYSICELLATT.NRRadioInfrastructure
+                AND pm_table.NRPhysicalCellDU = NRPHYSICELLATT.NRPhysicalCellDU
+                AND pm_table.dstsaving = NRPHYSICELLATT.dstsaving
+            WHERE pm_table.collecttime > '2023-10-09 00:00:00'
+                AND pm_table.collecttime <= '2023-10-16 00:00:00'
+                AND (
+                    (pm_table.collecttime > '2023-10-09 13:00:00'
+                    AND pm_table.collecttime <= '2023-10-10 00:00:00')
+                    OR (pm_table.collecttime > '2023-10-10 06:00:00'
+                    AND pm_table.collecttime <= '2023-10-11 00:00:00')
+                )
+                AND (pm_table.collecttime > '2023-10-09 13:00:00'
+                    AND pm_table.collecttime <= '2023-10-16 00:00:00')
+        ) pm_table
+        GROUP BY collecttime, dstsaving, pm_table.NRRadioInfrastructure, pm_table.NRPhysicalCellDU
+    ) COLLECTTIME_MO_TABLE
+    GROUP BY collecttime, dstsaving 
+) NRPhysicalCellDU
+ORDER BY begintime, endtime, dstsaving
+LIMIT 16775 OFFSET 0;

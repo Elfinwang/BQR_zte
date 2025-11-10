@@ -1,0 +1,28 @@
+pm=# SELECT pg_get_functiondef('pm_ITBBU_NRCellCU_667196'::regproc);
+                                                                                   pg_get_functiondef
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ CREATE OR REPLACE FUNCTION public.pm_itbbu_nrcellcu_667196(c600690004in double precision, c600690005in double precision, c600690006in double precision, c600690007in double precision)
+  RETURNS numeric                                                                                                                                                                      
+  LANGUAGE plpythonu                                                                                                                                                                   
+  IMMUTABLE                                                                                                                                                                            
+ AS $function$                                                                                                                                                                         
+   import math                                                                                                                                                                         
+   import decimal                                                                                                                                                                      
+   if((c600690004in is None) and (c600690005in is None) and (c600690006in is None) and (c600690007in is None)):                                                                        
+       return None                                                                                                                                                                     
+                                                                                                                                                                                       
+   C600690004 = 0 if c600690004in is None else c600690004in                                                                                                                            
+   C600690005 = 0 if c600690005in is None else c600690005in                                                                                                                            
+   C600690006 = 0 if c600690006in is None else c600690006in                                                                                                                            
+   C600690007 = 0 if c600690007in is None else c600690007in                                                                                                                            
+   __div0 = (C600690004C600690005C600690006C600690007)                                                                                                                              
+   if (abs(__div0) <= 1e-6) :                                                                                                                                                          
+       return None                                                                                                                                                                     
+   result =  C600690004/__div0                                                                                                                                                         
+   if math.isnan(result) : return None                                                                                                                                                 
+   result = min(result, 1.0)                                                                                                                                                           
+   result = max(result, 0.0)                                                                                                                                                           
+   return decimal.Decimal("{0:.6f}".format(result))                                                                                                                                    
+ $function$                                                                                                                                                                            
+
+(1 row)

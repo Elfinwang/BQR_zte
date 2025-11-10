@@ -1,0 +1,301 @@
+SELECT collecttime - INTERVAL '60 MINUTE' AS begintime, collecttime AS endtime, granularity, timezoneoffset, dstsaving
+FROM (
+	SELECT COLLECTTIME_MO_TABLE.collecttime
+		, COALESCE(AVG(A_N_PHYCELLDU_MERGE_new.granularityforgr), AVG(A_N_CELLDU_MERGE_new.granularityforgr), AVG(A_N_CELLCU_HO_MERGE_new.granularityforgr), AVG(A_N_CELLCU_HO_MERGE_V_new.granularityforgr), AVG(A_N_CELLCUUP_MERGE_new.granularityforgr)) AS granularityforgr
+		, COALESCE(MAX(A_N_PHYCELLDU_MERGE_new.granularity), MAX(A_N_CELLDU_MERGE_new.granularity), MAX(A_N_CELLCU_HO_MERGE_new.granularity), MAX(A_N_CELLCU_HO_MERGE_V_new.granularity), MAX(A_N_CELLCUUP_MERGE_new.granularity)) AS granularity
+		, COALESCE(MAX(A_N_PHYCELLDU_MERGE_new.timezoneoffset), MAX(A_N_CELLDU_MERGE_new.timezoneoffset), MAX(A_N_CELLCU_HO_MERGE_new.timezoneoffset), MAX(A_N_CELLCU_HO_MERGE_V_new.timezoneoffset), MAX(A_N_CELLCUUP_MERGE_new.timezoneoffset)) AS timezoneoffset
+		, COALESCE(MAX(A_N_PHYCELLDU_MERGE_new.dstsaving), MAX(A_N_CELLDU_MERGE_new.dstsaving), MAX(A_N_CELLCU_HO_MERGE_new.dstsaving), MAX(A_N_CELLCU_HO_MERGE_V_new.dstsaving), MAX(A_N_CELLCUUP_MERGE_new.dstsaving)) AS dstsaving
+		, COUNT(*) AS ITBBU_NRPhysicalCellDU_NO, SUM(A_N_CELLDU_MERGE_new.ITBBU_NRCellDU_NO) AS ITBBU_NRCellDU_NO
+		, SUM(A_N_CELLCU_HO_MERGE_new.ITBBU_NRCellCU_NO) AS ITBBU_NRCellCU_NO
+	FROM (
+		SELECT pm_table.collecttime, dstsaving
+		FROM (
+			SELECT pm_table.anpm_collecttime AS collecttime, pm_table.anpm_dstsaving AS dstsaving, pm_table.me AS pmdume
+			FROM A_N_PHYCELLDU_MERGE_h pm_table
+				INNER JOIN NRPHYSICELLATT
+				ON pm_table.anpm_collecttime = NRPHYSICELLATT.nrp_collecttime
+					AND pm_table.me = NRPHYSICELLATT.dume
+					AND pm_table.anpm_dstsaving = NRPHYSICELLATT.nrp_dstsaving
+			WHERE pm_table.anpm_collecttime > '2023-10-09 00:00:00'
+				AND pm_table.anpm_collecttime <= '2023-10-16 00:00:00'
+				AND ((pm_table.anpm_collecttime > '2023-10-09 13:00:00'
+						AND pm_table.anpm_collecttime <= '2023-10-10 00:00:00')
+					OR (pm_table.anpm_collecttime > '2023-10-10 06:00:00'
+						AND pm_table.anpm_collecttime <= '2023-10-11 00:00:00'))
+				AND (pm_table.anpm_collecttime > '2023-10-09 13:00:00'
+					AND pm_table.anpm_collecttime <= '2023-10-16 00:00:00')
+		) pm_table
+		GROUP BY collecttime, dstsaving
+	) COLLECTTIME_MO_TABLE
+		LEFT JOIN (
+			SELECT pm_table.anpm_collecttime AS collecttime, pm_table.anpm_timezoneoffset AS timezoneoffset, pm_table.anpm_dstsaving AS dstsaving, pm_table.granularity AS granularity, pm_table.granularity AS granularityforgr
+			FROM A_N_PHYCELLDU_MERGE_h pm_table
+				INNER JOIN NRPHYSICELLATT
+				ON pm_table.anpm_collecttime = NRPHYSICELLATT.nrp_collecttime
+					AND pm_table.me = NRPHYSICELLATT.dume
+					AND pm_table.anpm_dstsaving = NRPHYSICELLATT.nrp_dstsaving
+			WHERE pm_table.anpm_collecttime > '2023-10-09 00:00:00'
+				AND pm_table.anpm_collecttime <= '2023-10-16 00:00:00'
+				AND ((pm_table.anpm_collecttime > '2023-10-09 13:00:00'
+						AND pm_table.anpm_collecttime <= '2023-10-10 00:00:00')
+					OR (pm_table.anpm_collecttime > '2023-10-10 06:00:00'
+						AND pm_table.anpm_collecttime <= '2023-10-11 00:00:00'))
+				AND (pm_table.anpm_collecttime > '2023-10-09 13:00:00'
+					AND pm_table.anpm_collecttime <= '2023-10-16 00:00:00')
+		) A_N_PHYCELLDU_MERGE_new ON (COLLECTTIME_MO_TABLE.collecttime = A_N_PHYCELLDU_MERGE_new.collecttime AND COLLECTTIME_MO_TABLE.dstsaving = A_N_PHYCELLDU_MERGE_new.dstsaving)
+		LEFT JOIN (
+			SELECT pm_table.anchm_collecttime, MAX(pm_table.anchm_timezoneoffset) AS timezoneoffset, MAX(pm_table.anchm_dstsaving) AS dstsaving
+				, MAX(pm_table.granularity) AS granularity, AVG(pm_table.granularity) AS granularityforgr
+				, COUNT(DISTINCT pm_table.me || pm_table.GNBCUCPFunction ) AS ITBBU_NRCellCU_NO
+			FROM A_N_CELLCU_HO_MERGE_h pm_table
+				INNER JOIN NRCELLATT
+				ON pm_table.anchm_collecttime = NRCELLATT.n_collecttime
+					AND pm_table.me = NRCELLATT.me
+					AND pm_table.GNBCUCPFunction = NRCELLATT.GNBCUCPFunction
+					AND pm_table.anchm_dstsaving = NRCELLATT.n_dstsaving
+			WHERE pm_table.anchm_collecttime > '2023-10-09 00:00:00'
+				AND pm_table.anchm_collecttime <= '2023-10-16 00:00:00'
+				AND ((pm_table.anchm_collecttime > '2023-10-09 13:00:00'
+						AND pm_table.anchm_collecttime <= '2023-10-10 00:00:00')
+					OR (pm_table.anchm_collecttime > '2023-10-10 06:00:00'
+						AND pm_table.anchm_collecttime <= '2023-10-11 00:00:00')
+					OR (pm_table.anchm_collecttime > '2023-10-11 06:00:00'
+						AND pm_table.anchm_collecttime <= '2023-10-12 00:00:00'))
+				AND (pm_table.anchm_collecttime > '2023-10-09 13:00:00'
+					AND pm_table.anchm_collecttime <= '2023-10-16 00:00:00')
+			GROUP BY pm_table.anchm_collecttime
+		) A_N_CELLCU_HO_MERGE_new ON (COLLECTTIME_MO_TABLE.collecttime = A_N_CELLCU_HO_MERGE_new.anchm_collecttime AND COLLECTTIME_MO_TABLE.dstsaving = A_N_CELLCU_HO_MERGE_new.dstsaving)
+		LEFT JOIN (
+			SELECT pm_table.collecttime, MAX(pm_table.timezoneoffset) AS timezoneoffset, MAX(pm_table.dstsaving) AS dstsaving
+				, MAX(pm_table.granularity) AS granularity, AVG(pm_table.granularity) AS granularityforgr
+				, COUNT(DISTINCT pm_table.me || pm_table.GNBCUCPFunction ) AS ITBBU_NRCellCU_NO
+			FROM (
+				SELECT pm_table.anchmv_collecttime AS collecttime, pm_table.collecttimegmt AS collecttimegmt, pm_table.anchmv_timezoneoffset AS timezoneoffset, pm_table.anchmv_dstsaving AS dstsaving
+					, MAX(pm_table.granularity) AS granularity, pm_table.me, pm_table.GNBCUCPFunction
+					, MAX(pm_table.cellId) AS cellId, MAX(pm_table.duMeMoId) AS duMeMoId
+					, MAX(pm_table.gNBId) AS gNBId, MAX(pm_table.gNBIdLength) AS gNBIdLength
+					, MAX(pm_table.gNBplmn) AS gNBplmn, MAX(pm_table.masterOperatorId) AS masterOperatorId
+					, MAX(pm_table.nrCarrierGroupId) AS nrCarrierGroupId, MAX(pm_table.nrPhysicalCellDUId) AS nrPhysicalCellDUId
+					, MAX(pm_table.servingplmn) AS servingplmn, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080019
+						ELSE NULL
+					END) AS C600080019_1
+					, SUM(C600080019) AS C600080019_aggr_p_all, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080019
+						ELSE NULL
+					END) AS C600080019_5
+					, SUM(C600080019) AS C600080019, SUM(C600080015) AS C600080015_aggr_p_all
+					, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080015
+						ELSE NULL
+					END) AS C600080015_5, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080015
+						ELSE NULL
+					END) AS C600080015_1
+					, SUM(C600080015) AS C600080015, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080059
+						ELSE NULL
+					END) AS C600080059_1
+					, SUM(C600080059) AS C600080059_aggr_p_all, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080059
+						ELSE NULL
+					END) AS C600080059_5
+					, SUM(C600080059) AS C600080059, SUM(C600080017) AS C600080017_aggr_p_all
+					, SUM(C600080017) AS C600080017, SUM(C600080057) AS C600080057_aggr_p_all
+					, SUM(C600080057) AS C600080057, SUM(C600080012) AS C600080012_aggr_p_all
+					, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080012
+						ELSE NULL
+					END) AS C600080012_5, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080012
+						ELSE NULL
+					END) AS C600080012_1
+					, SUM(C600080012) AS C600080012, SUM(C600080058) AS C600080058_aggr_p_all
+					, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080058
+						ELSE NULL
+					END) AS C600080058_1, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080058
+						ELSE NULL
+					END) AS C600080058_5
+					, SUM(C600080058) AS C600080058, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080013
+						ELSE NULL
+					END) AS C600080013_5
+					, SUM(C600080013) AS C600080013_aggr_p_all, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080013
+						ELSE NULL
+					END) AS C600080013_1
+					, SUM(C600080013) AS C600080013, SUM(C600080014) AS C600080014_aggr_p_all
+					, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080014
+						ELSE NULL
+					END) AS C600080014_5, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080014
+						ELSE NULL
+					END) AS C600080014_1
+					, SUM(C600080014) AS C600080014, MAX(CASE PDF_INDEX
+						WHEN '2' THEN C600080112
+						ELSE NULL
+					END) AS C600080112_2
+					, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080112
+						ELSE NULL
+					END) AS C600080112_1, SUM(C600080112) AS C600080112
+					, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080061
+						ELSE NULL
+					END) AS C600080061_5, SUM(C600080061) AS C600080061_aggr_p_all
+					, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080061
+						ELSE NULL
+					END) AS C600080061_1, SUM(C600080061) AS C600080061
+					, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080060
+						ELSE NULL
+					END) AS C600080060_5, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080060
+						ELSE NULL
+					END) AS C600080060_1
+					, SUM(C600080060) AS C600080060_aggr_p_all, SUM(C600080060) AS C600080060
+					, SUM(C600080023) AS C600080023_aggr_p_all, SUM(C600080023) AS C600080023
+					, SUM(C600080068) AS C600080068_aggr_p_all, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080068
+						ELSE NULL
+					END) AS C600080068_1
+					, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080068
+						ELSE NULL
+					END) AS C600080068_5, SUM(C600080068) AS C600080068
+					, SUM(C600080001) AS C600080001_aggr_p_all, SUM(C600080001) AS C600080001
+					, SUM(C600080067) AS C600080067_aggr_p_all, SUM(C600080067) AS C600080067
+					, SUM(C600080066) AS C600080066_aggr_p_all, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080066
+						ELSE NULL
+					END) AS C600080066_1
+					, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080066
+						ELSE NULL
+					END) AS C600080066_5, SUM(C600080066) AS C600080066
+					, SUM(C600080065) AS C600080065_aggr_p_all, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080065
+						ELSE NULL
+					END) AS C600080065_5
+					, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080065
+						ELSE NULL
+					END) AS C600080065_1, SUM(C600080065) AS C600080065
+					, SUM(C600080064) AS C600080064_aggr_p_all, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080064
+						ELSE NULL
+					END) AS C600080064_5
+					, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080064
+						ELSE NULL
+					END) AS C600080064_1, SUM(C600080064) AS C600080064
+					, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080040
+						ELSE NULL
+					END) AS C600080040_5, SUM(C600080040) AS C600080040_aggr_p_all
+					, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080040
+						ELSE NULL
+					END) AS C600080040_1, SUM(C600080040) AS C600080040
+					, SUM(C600080063) AS C600080063_aggr_p_all, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080063
+						ELSE NULL
+					END) AS C600080063_5
+					, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080063
+						ELSE NULL
+					END) AS C600080063_1, SUM(C600080063) AS C600080063
+					, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080041
+						ELSE NULL
+					END) AS C600080041_5, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080041
+						ELSE NULL
+					END) AS C600080041_1
+					, SUM(C600080041) AS C600080041_aggr_p_all, SUM(C600080041) AS C600080041
+					, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080020
+						ELSE NULL
+					END) AS C600080020_5, SUM(C600080020) AS C600080020_aggr_p_all
+					, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080020
+						ELSE NULL
+					END) AS C600080020_1, SUM(C600080020) AS C600080020
+					, MAX(CASE PDF_INDEX
+						WHEN '5' THEN C600080062
+						ELSE NULL
+					END) AS C600080062_5, SUM(C600080062) AS C600080062_aggr_p_all
+					, MAX(CASE PDF_INDEX
+						WHEN '1' THEN C600080062
+						ELSE NULL
+					END) AS C600080062_1, SUM(C600080062) AS C600080062
+				FROM A_N_CELLCU_HO_MERGE_V_h pm_table
+					INNER JOIN NRCELLATT
+					ON pm_table.anchmv_collecttime = NRCELLATT.n_collecttime
+						AND pm_table.me = NRCELLATT.me
+						AND pm_table.GNBCUCPFunction = NRCELLATT.GNBCUCPFunction
+						AND pm_table.anchmv_dstsaving = NRCELLATT.n_dstsaving
+				WHERE pm_table.anchmv_collecttime > '2023-10-09 00:00:00'
+					AND pm_table.anchmv_collecttime <= '2023-10-16 00:00:00'
+					AND ((pm_table.anchmv_collecttime > '2023-10-09 13:00:00'
+							AND pm_table.anchmv_collecttime <= '2023-10-10 00:00:00')
+						OR (pm_table.anchmv_collecttime > '2023-10-10 06:00:00'
+							AND pm_table.anchmv_collecttime <= '2023-10-11 00:00:00'))
+					AND (pm_table.anchmv_collecttime > '2023-10-09 13:00:00'
+						AND pm_table.anchmv_collecttime <= '2023-10-16 00:00:00')
+				GROUP BY pm_table.anchmv_collecttime, pm_table.collecttimegmt, pm_table.anchmv_timezoneoffset, pm_table.anchmv_dstsaving, pm_table.me, pm_table.GNBCUCPFunction
+			) pm_table
+			GROUP BY pm_table.collecttime
+		) A_N_CELLCU_HO_MERGE_V_new ON (COLLECTTIME_MO_TABLE.collecttime = A_N_CELLCU_HO_MERGE_V_new.collecttime AND COLLECTTIME_MO_TABLE.dstsaving = A_N_CELLCU_HO_MERGE_V_new.dstsaving)
+		LEFT JOIN (
+			SELECT pm_table.ancm_collecttime, MAX(pm_table.ancm_timezoneoffset) AS timezoneoffset, MAX(pm_table.ancm_dstsaving) AS dstsaving
+				, MAX(pm_table.granularity) AS granularity, AVG(pm_table.granularity) AS granularityforgr
+			FROM A_N_CELLCUUP_MERGE_h pm_table
+				INNER JOIN NRCELLATT
+				ON pm_table.ancm_collecttime = NRCELLATT.n_collecttime
+					AND pm_table.me = NRCELLATT.me
+					AND pm_table.GNBCUCPFunction = NRCELLATT.GNBCUCPFunction
+					AND pm_table.ancm_dstsaving = NRCELLATT.n_dstsaving
+			WHERE pm_table.ancm_collecttime > '2023-10-09 00:00:00'
+				AND pm_table.ancm_collecttime <= '2023-10-16 00:00:00'
+				AND ((pm_table.ancm_collecttime > '2023-10-09 13:00:00'
+						AND pm_table.ancm_collecttime <= '2023-10-10 00:00:00')
+					OR (pm_table.ancm_collecttime > '2023-10-10 06:00:00'
+						AND pm_table.ancm_collecttime <= '2023-10-11 00:00:00')
+					OR (pm_table.ancm_collecttime > '2023-10-11 06:00:00'
+						AND pm_table.ancm_collecttime <= '2023-10-12 00:00:00'))
+				AND (pm_table.ancm_collecttime > '2023-10-09 13:00:00'
+					AND pm_table.ancm_collecttime <= '2023-10-16 00:00:00')
+			GROUP BY pm_table.ancm_collecttime
+		) A_N_CELLCUUP_MERGE_new ON (COLLECTTIME_MO_TABLE.collecttime = A_N_CELLCUUP_MERGE_new.ancm_collecttime AND COLLECTTIME_MO_TABLE.dstsaving = A_N_CELLCUUP_MERGE_new.dstsaving)
+		LEFT JOIN (
+			SELECT pm_table.a_collecttime, MAX(pm_table.a_timezoneoffset) AS timezoneoffset, MAX(pm_table.a_dstsaving) AS dstsaving
+				, MAX(pm_table.granularity) AS granularity, AVG(pm_table.granularity) AS granularityforgr
+				, COUNT(DISTINCT pm_table.me || pm_table.GNBDUFunction || pm_table.NRCellDU || pm_table.PlmnInfoDU) AS ITBBU_NRCellDU_NO
+			FROM A_N_CELLDU_MERGE_h pm_table
+				INNER JOIN NRCELLATT
+				ON pm_table.a_collecttime = NRCELLATT.n_collecttime
+					AND pm_table.me = NRCELLATT.dume
+					AND pm_table.GNBDUFunction = NRCELLATT.GNBDUFunction
+					AND pm_table.NRCellDU = NRCELLATT.NRCellDU
+					AND pm_table.a_dstsaving = NRCELLATT.n_dstsaving
+			WHERE pm_table.a_collecttime > '2023-10-09 00:00:00'
+				AND pm_table.a_collecttime <= '2023-10-16 00:00:00'
+				AND ((pm_table.a_collecttime > '2023-10-09 13:00:00'
+						AND pm_table.a_collecttime <= '2023-10-10 00:00:00')
+					OR (pm_table.a_collecttime > '2023-10-10 06:00:00'
+						AND pm_table.a_collecttime <= '2023-10-11 00:00:00')
+					OR (pm_table.a_collecttime > '2023-10-11 06:00:00'
+						AND pm_table.a_collecttime <= '2023-10-12 00:00:00'))
+				AND (pm_table.a_collecttime > '2023-10-09 13:00:00'
+					AND pm_table.a_collecttime <= '2023-10-16 00:00:00')
+			GROUP BY pm_table.a_collecttime
+		) A_N_CELLDU_MERGE_new ON (COLLECTTIME_MO_TABLE.collecttime = A_N_CELLDU_MERGE_new.a_collecttime AND COLLECTTIME_MO_TABLE.dstsaving = A_N_CELLDU_MERGE_new.dstsaving)
+	GROUP BY COLLECTTIME_MO_TABLE.collecttime, COLLECTTIME_MO_TABLE.dstsaving
+) NRPhysicalCellDU
+ORDER BY begintime, endtime, dstsaving
+LIMIT 16775 OFFSET 0

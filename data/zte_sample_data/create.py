@@ -1,0 +1,36 @@
+func_names_file = "/data1/wangyiyan/BQR/data/zte_sample_data/pm_itbbu_functions.txt"
+output_sql_file = "/data1/wangyiyan/BQR/data/zte_sample_data/pm_itbbu_functions_create.sql"
+
+func_template = """
+CREATE OR REPLACE FUNCTION public.{func_name}(c600690004in double precision, c600690005in double precision, c600690006in double precision, c600690007in double precision)
+  RETURNS numeric
+  LANGUAGE plpythonu
+  IMMUTABLE
+AS $function$
+   import math
+   import decimal
+   if((c600690004in is None) and (c600690005in is None) and (c600690006in is None) and (c600690007in is None)):
+       return None
+
+   C600690004 = 0 if c600690004in is None else c600690004in
+   C600690005 = 0 if c600690005in is None else c600690005in
+   C600690006 = 0 if c600690006in is None else c600690006in
+   C600690007 = 0 if c600690007in is None else c600690007in
+   __div0 = (C600690004+C600690005+C600690006+C600690007)
+   if (abs(__div0) <= 1e-6) :
+       return None
+   result =  C600690004/__div0
+   if math.isnan(result) : return None
+   result = min(result, 1.0)
+   result = max(result, 0.0)
+   return decimal.Decimal("{{0:.6f}}".format(result))
+$function$;
+"""
+
+with open(func_names_file, "r") as f:
+    func_names = [line.strip() for line in f if line.strip()]
+
+with open(output_sql_file, "w") as f:
+    for name in func_names:
+        f.write(func_template.format(func_name=name.lower()))
+        f.write("\n\n")
